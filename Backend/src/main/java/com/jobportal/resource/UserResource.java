@@ -595,5 +595,80 @@ public class UserResource {
                 .body(resource);
 
 	}
+	public ResponseEntity<UserResponseDto> fetchAllRegistration() {
+		LOG.info("Request received for fetching all new member applications");
+
+		UserResponseDto response = new UserResponseDto();
+
+		// we can find by role to get all the list of employee and employer
+
+//		List<User> allUsers = new ArrayList<>();
+//
+//		allUsers = this.userService.getAll();
+		List<User> NewEmployees = this.userService.getUserByRole("NewEmployee");
+		List<User> NewEmployers = this.userService.getUserByRole("NewEmployer");
+
+		List<User> registered = new ArrayList<>();
+
+		for(User user : NewEmployees) {
+			registered.add(user);
+		}
+		for(User user : NewEmployers) {
+			registered.add(user);
+		}
+
+		if (CollectionUtils.isEmpty(registered)) {
+			response.setResponseMessage("No new registration found!!");
+			response.setSuccess(false);
+
+			return new ResponseEntity<UserResponseDto>(response, HttpStatus.OK);
+		}
+
+
+		response.setUsers(registered);
+		response.setResponseMessage("Registered Application Fetched Successful");
+		response.setSuccess(true);
+
+		return new ResponseEntity<UserResponseDto>(response, HttpStatus.OK);
+	}
+
+	public ResponseEntity<CommonApiResponse> updateUserRole(UpdateUserRoleRequest request) {
+		CommonApiResponse response = new CommonApiResponse();
+
+		if (request == null) {
+			response.setResponseMessage("missing input");
+			response.setSuccess(false);
+			return new ResponseEntity<CommonApiResponse>(response, HttpStatus.BAD_REQUEST);
+		}
+
+		User user = this.userService.getUserById(request.getUserId());
+
+		if (user == null) {
+			response.setResponseMessage("User not found");
+			response.setSuccess(false);
+			return new ResponseEntity<CommonApiResponse>(response, HttpStatus.OK);
+		}
+
+		if(request.isAllowed()){
+			if(user.getRole().equals("NewEmployee")){
+				user.setRole(UserRole.ROLE_EMPLOYEE.value());
+			}else{
+				user.setRole(UserRole.ROLE_EMPLOYER.value());
+			}
+			User updatedUser = this.userService.updateUser(user);
+
+			if (updatedUser == null) {
+				throw new UserSaveFailedException("Failed to update the User Profile");
+			}
+		}else{
+			deleteUser(request.getUserId());
+		}
+
+
+		response.setResponseMessage("User Changes Successfully");
+		response.setSuccess(true);
+
+		return new ResponseEntity<CommonApiResponse>(response, HttpStatus.OK);
+	}
 	
 }

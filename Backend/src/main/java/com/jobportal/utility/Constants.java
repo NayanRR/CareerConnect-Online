@@ -3,7 +3,7 @@ package com.jobportal.utility;
 public class Constants {
 
 	public enum UserRole {
-		ROLE_EMPLOYEE("Employee"), ROLE_ADMIN("Admin"), ROLE_EMPLOYER("Employer");
+		ROLE_NEWEMPLOYEE("NewEmployee"),ROLE_NEWEMPLOYER("NewEmployer"),ROLE_EMPLOYEE("Employee"), ROLE_ADMIN("Admin"), ROLE_EMPLOYER("Employer");
 
 		private String role;
 

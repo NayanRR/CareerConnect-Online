@@ -46,6 +46,19 @@ public class UserController {
 		return userResource.registerAdmin(request);
 	}
 
+
+	@GetMapping("/admin/fetch/all/registration")
+	@Operation(summary = "Api to fetch all the regision by admin")
+	public ResponseEntity<UserResponseDto> fetchAllRegistration() {
+		return userResource.fetchAllRegistration();
+	}
+
+	@PutMapping("/admin/profile/permission")
+	@Operation(summary = "Api to update the user role  by admin")
+	public ResponseEntity<CommonApiResponse> updateUserRole(@RequestBody  UpdateUserRoleRequest updateUserRoleRequest) {
+		return this.userResource.updateUserRole(updateUserRoleRequest);
+	}
+
 	// for customer and restaurant register
 	@PostMapping("register")
 	@Operation(summary = "Api to register customer or restaurant user")
