@@ -318,11 +318,93 @@ public class JobApplicationResource {
 			return new ResponseEntity<JobApplicationResponse>(response, HttpStatus.OK);
 		}
 
-		response.setApplications(applications);
+		String[] jobSkills = job.getRequiredSkills().split(" ");
+
+		PriorityQueue<Pair> sortedApplication = new PriorityQueue<Pair>(Comparator.comparingDouble(Pair::getScore).reversed());
+		List<JobApplication> sortedUser = new ArrayList<>();
+
+		for(JobApplication application : applications){
+			int score1 = matchingResumeAsPerSkills(application, jobSkills);
+
+			if(score1 != 0){
+				int score2 = matchingResumeAsPerDescription(application, job.getDescription());
+				Pair paired = new Pair();
+				paired.jobApplication = application;
+				int score = score1*(3/5) + score2*(2/5);
+
+				paired.score = score;
+				sortedApplication.add(paired);
+			}
+		}
+
+		while (!sortedApplication.isEmpty()) {
+			Pair resumeScore = sortedApplication.poll();
+			sortedUser.add(resumeScore.jobApplication);
+		}
+
+		response.setApplications(sortedUser);
 		response.setResponseMessage("Job Application Fetched Successful");
 		response.setSuccess(true);
 
 		return new ResponseEntity<JobApplicationResponse>(response, HttpStatus.OK);
 	}
+	public String readFileToString(String filePath) throws IOException {
+		Resource resource = resourceLoader.getResource(filePath);
 
+		try (Reader reader = new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8)) {
+			return FileCopyUtils.copyToString(reader);
+		}
+	}
+	private List<String> extractKeywords(String text) {
+		String[] words = text.replaceAll("[^a-zA-Z ]", "").toLowerCase().split("\\s+");
+
+		List<String> keywords = new ArrayList<>();
+		for (String word : words) {
+			if (!stopWords.contains(word.toLowerCase())) {
+				keywords.add(word.toLowerCase());
+			}
+		}
+		return keywords;
+	}
+	private int matchingResumeAsPerDescription(JobApplication application, String jobDescription) throws IOException {
+		String filePath = application.getEmployee().getUserProfile().getResume();
+		String fileContent = readFileToString(filePath);
+		int score = 0;
+
+		try {
+			// Extract keywords from resume and job description
+			List<String> resumeKeywords = extractKeywords(fileContent);
+			List<String> jobKeywords = extractKeywords(jobDescription);
+
+			// Calculate score based on matching words
+
+			for (String word1 : resumeKeywords) {
+				for (String skill : jobKeywords) {
+					if (word1.equals(skill)) {
+						score++;
+					}
+				}
+			}
+
+			return score;
+
+		} catch (Exception e) {
+			throw new IOException("Error: " + e.getMessage());
+		}
+	}
+
+	private int matchingResumeAsPerSkills(JobApplication application, String[] jobSkills) {
+		int score = 0;
+		UserProfile user = application.getEmployee().getUserProfile();
+		List<UserSkill> userSkills = user.getSkills();
+
+		for (String word1 : jobSkills) {
+			for (UserSkill skill : userSkills) {
+				if (word1.equals(skill.getSkill())) {
+					score++;
+				}
+			}
+		}
+		return score;
+	}
 }
